@@ -29,23 +29,31 @@ async def main() -> None:
     async def run_parallel(*args: Awaitable):
         await asyncio.gather(*args)
 
-    await run_parallel(
-        service.send_msg(Message(devices[0], MessageType.SWITCH_ON)),
-        service.send_msg(Message(devices[1], MessageType.SWITCH_ON))
-    )
-    await run_sequence(
-        service.send_msg(Message(devices[1],
-                         MessageType.PLAY_SONG,
-                         "Rick Astley - Never Gonna Give You Up"))
-    )
-    await run_parallel(
-        service.send_msg(Message(devices[0], MessageType.SWITCH_OFF)),
-        service.send_msg(Message(devices[1], MessageType.SWITCH_OFF))
-    )
-    await run_sequence(
-        service.send_msg(Message(devices[2], MessageType.FLUSH)),
-        service.send_msg(Message(devices[2], MessageType.CLEAN))
-    )
+    wake_up_program = [
+        await run_parallel(
+            service.send_msg(Message(devices[0], MessageType.SWITCH_ON)),
+            service.send_msg(Message(devices[1], MessageType.SWITCH_ON))
+        ),
+        await run_sequence(
+            service.send_msg(Message(devices[1],
+                                     MessageType.PLAY_SONG,
+                                     "Rick Astley - Never Gonna Give You Up"))
+        )
+    ]
+
+    sleep_program = [
+        await run_parallel(
+            service.send_msg(Message(devices[0], MessageType.SWITCH_OFF)),
+            service.send_msg(Message(devices[1], MessageType.SWITCH_OFF))
+        ),
+        await run_sequence(
+            service.send_msg(Message(devices[2], MessageType.FLUSH)),
+            service.send_msg(Message(devices[2], MessageType.CLEAN))
+        )
+    ]
+
+    await service.run_program(wake_up_program)
+    await service.run_program(sleep_program)
 
 if __name__ == "__main__":
     start = time.perf_counter()
